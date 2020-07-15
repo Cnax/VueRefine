@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: Vue精炼
+ * @Author: a77321a
+ * @Date: 2020-07-15 13:59:09
+ * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2020-07-15 13:59:21
+ */
+
 // 当前模型
 let TARGET = null;
 const utils = {
