@@ -1,12 +1,12 @@
 let TARGET = null;
 const utils = {
-  getValue(expr, vm) {
+  getValue (expr, vm) {
     return vm.$data[expr.trim()];
   },
-  setValue(expr, vm, newValue) {
+  setValue (expr, vm, newValue) {
     vm.$data[expr] = newValue;
   },
-  model(node, value, vm) {
+  model (node, value, vm) {
     const initValue = this.getValue(value, vm);
     new Watcher(value, vm, (newValue) => {
       this.modelUpdater(node, newValue);
@@ -19,7 +19,7 @@ const utils = {
 
     this.modelUpdater(node, initValue);
   },
-  text(node, value, vm) {
+  text (node, value, vm) {
     let result;
     if (value.includes('{{')) {
       // {{ xxx }}
@@ -37,14 +37,14 @@ const utils = {
 
     this.textUpdater(node, result);
   },
-  on(node, value, vm, eventName) {
+  on (node, value, vm, eventName) {
     const fn = vm.$options.methods[value];
     node.addEventListener(eventName, fn.bind(vm), false);
   },
-  textUpdater(node, value) {
+  textUpdater (node, value) {
     node.textContent = value;
   },
-  modelUpdater(node, value) {
+  modelUpdater (node, value) {
     node.value = value;
   }
 }
@@ -59,7 +59,7 @@ class Watcher {
     this.oldValue = this.getOldValue();
   }
 
-  getOldValue() {
+  getOldValue () {
     TARGET = this;
     // 通过 getter 读取当前依赖
     const oldValue = utils.getValue(this.expr, this.vm);
@@ -67,7 +67,7 @@ class Watcher {
     return oldValue;
   }
 
-  update() {
+  update () {
     const newValue = utils.getValue(this.expr, this.vm);
     if (newValue !== this.oldValue) {
       this.cb(newValue);
@@ -81,15 +81,15 @@ class Dep {
     this.collect = [];
   }
 
-  addWatcher(watcher) {
+  addWatcher (watcher) {
     this.collect.push(watcher);
   }
 
-  notify() {
+  notify () {
     this.collect.forEach(w => w.update());
   }
 }
-
+// 编译
 class Compiler {
   constructor(el, vm) {
     this.el = this.isElementNode(el) ? el : document.querySelector(el);
@@ -101,7 +101,7 @@ class Compiler {
     this.el.appendChild(fragment);
   }
 
-  compile(fragment) {
+  compile (fragment) {
     const childNodes = Array.from(fragment.childNodes);
     childNodes.forEach(childNode => {
       if (this.isElementNode(childNode)) {
@@ -119,7 +119,7 @@ class Compiler {
     });
   }
 
-  compileElement(node) {
+  compileElement (node) {
     // v-model v-text v-on:click
     const attributes = Array.from(node.attributes);
     attributes.forEach(attr => {
@@ -137,15 +137,15 @@ class Compiler {
     })
   }
 
-  isDirector(name) {
+  isDirector (name) {
     return name.startsWith('v-');
   }
 
-  isEventName(name) {
+  isEventName (name) {
     return name.startsWith('@');
   }
 
-  compileText(node) {
+  compileText (node) {
     // {{ msg }}
     const content = node.textContent;
     if (/\{\{(.+)\}\}/.test(content)) {
@@ -153,30 +153,30 @@ class Compiler {
     }
   }
 
-  compileFragment(el) {
+  compileFragment (el) {
     const f = document.createDocumentFragment();
     let firstChild;
-    while(firstChild = el.firstChild) {
+    while (firstChild = el.firstChild) {
       f.appendChild(firstChild);
     }
     return f;
   }
 
-  isTextNode(el) {
+  isTextNode (el) {
     return el.nodeType === 3;
   }
 
-  isElementNode(el) {
+  isElementNode (el) {
     return el.nodeType === 1;
   }
 }
-
+// 观察者
 class Observer {
   constructor(data) {
     this.observe(data);
   }
-
-  observe(data) {
+  // 深度监听 递归
+  observe (data) {
     if (data && typeof data === 'object') {
       Object.keys(data).forEach(key => {
         this.defineReactive(data, key, data[key]);
@@ -184,12 +184,13 @@ class Observer {
     }
   }
 
-  defineReactive(obj, key, value) {
+  defineReactive (obj, key, value) {
     this.observe(value);
     const dep = new Dep();
     Object.defineProperty(obj, key, {
-      get() {
+      get () {
         const target = TARGET;
+        // 收集依赖
         TARGET && dep.addWatcher(target);
         return value;
       },
@@ -203,9 +204,10 @@ class Observer {
     })
   }
 }
-
+// Vue类
 class Vue {
   constructor(options) {
+    // 实例化vue传递数据 
     this.$el = options.el;
     this.$data = options.data;
     this.$options = options;
@@ -214,18 +216,18 @@ class Vue {
     new Observer(this.$data);
     // 处理模版部分，将模版中使用的 data 部分的变量和模版绑定起来
     new Compiler(this.$el, this);
-
+    // 绑定数据
     this.proxyData(this.$data)
   }
 
   // 可以通过 this.xx 更改 this.$data.xx 的结果
-  proxyData(data) {
+  proxyData (data) {
     Object.keys(data).forEach(key => {
       Object.defineProperty(this, key, {
-        get() {
+        get () {
           return data[key];
         },
-        set(newVal) {
+        set (newVal) {
           data[key] = newVal;
         }
       });
